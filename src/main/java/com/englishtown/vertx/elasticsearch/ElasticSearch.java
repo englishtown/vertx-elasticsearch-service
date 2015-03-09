@@ -6,6 +6,8 @@ import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.update.UpdateRequestBuilder;
+import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
@@ -14,6 +16,7 @@ import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.script.ScriptService;
 import org.vertx.java.busmods.BusModBase;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.eventbus.Message;
@@ -46,6 +49,11 @@ public class ElasticSearch extends BusModBase implements Handler<Message<JsonObj
     public static final String CONST_TYPE = "_type";
     public static final String CONST_VERSION = "_version";
     public static final String CONST_SOURCE = "_source";
+    public static final String CONST_SCRIPT = "_script";
+    public static final String CONST_SCRIPT_PARAMS = "_params";
+    public static final String CONST_SCRIPT_RETRY = "_retry";
+    public static final String CONST_SCRIPT_UPSERT = "_upsert";
+    public static final String CONST_SCRIPT_LANGUAGE = "_lang";
 
     @Inject
     public ElasticSearch(TransportClientFactory clientFactory, ElasticSearchConfigurator configurator) {
@@ -102,6 +110,9 @@ public class ElasticSearch extends BusModBase implements Handler<Message<JsonObj
             switch (action) {
                 case "index":
                     doIndex(message);
+                    break;
+                case "update":
+                    doUpdate(message);
                     break;
                 case "get":
                     doGet(message);
@@ -170,6 +181,75 @@ public class ElasticSearch extends BusModBase implements Handler<Message<JsonObj
                         sendError(message, "Index error: " + e.getMessage(), new RuntimeException(e));
                     }
                 });
+
+    }
+
+    /**
+     * http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-update.html
+     *
+     * @param message update event bus message
+     */
+    public void doUpdate(final Message<JsonObject> message) {
+
+        JsonObject body = message.body();
+
+        final String index = getRequiredIndex(body, message);
+        if (index == null) {
+            return;
+        }
+
+        // type is optional
+        final String type = body.getString(CONST_TYPE);
+
+        final String id = body.getString(CONST_ID);
+
+        final String script = body.getString(CONST_SCRIPT);
+        if (script == null) {
+            sendError(message, CONST_SCRIPT + " is required");
+            return;
+        }
+
+        final UpdateRequestBuilder updateRequestBuilder = client.prepareUpdate(index, type, id)
+                .setScript(script, ScriptService.ScriptType.INLINE);
+
+        final JsonObject params = body.getObject(CONST_SCRIPT_PARAMS);
+
+        if ( params != null ) {
+            for ( final String fieldName : params.getFieldNames() ) {
+                final Object value = params.getValue(fieldName);
+                updateRequestBuilder.addScriptParam( fieldName, value );
+            }
+        }
+
+        if ( body.containsField( CONST_SCRIPT_RETRY ) ) {
+            updateRequestBuilder.setRetryOnConflict( body.getInteger( CONST_SCRIPT_RETRY ) );
+        }
+
+        if ( body.containsField( CONST_SCRIPT_UPSERT ) ) {
+            updateRequestBuilder.setUpsert( body.getObject( CONST_SCRIPT_UPSERT ).encode() );
+        }
+
+        if ( body.containsField( CONST_SCRIPT_LANGUAGE ) ) {
+            updateRequestBuilder.setScriptLang( body.getString( CONST_SCRIPT_LANGUAGE ) );
+        }
+
+        updateRequestBuilder.execute(new ActionListener<UpdateResponse>() {
+            @Override
+            public void onResponse(UpdateResponse updateResponse) {
+                JsonObject reply = new JsonObject()
+                        .putString(CONST_INDEX, updateResponse.getIndex())
+                        .putString(CONST_TYPE, updateResponse.getType())
+                        .putString(CONST_ID, updateResponse.getId())
+                        .putNumber(CONST_VERSION, updateResponse.getVersion());
+                sendOK(message, reply);
+            }
+
+            @Override
+            public void onFailure(Throwable e) {
+                sendError(message, "Update error: " + e.getMessage(), new RuntimeException(e));
+            }
+        });
+
 
     }
 
