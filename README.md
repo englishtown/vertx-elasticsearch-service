@@ -281,7 +281,9 @@ Send a json message to the event bus with the following structure:
     "size": <size>,
     "from": <from>,
     "fields": <fields>,
-    "timeout": <timeout>
+    "timeout": <timeout>,
+    "fetch_includes": <fetch_includes>,
+    "fetch_excludes": <fetch_excludes>
 }
 ```
 
@@ -304,6 +306,8 @@ Send a json message to the event bus with the following structure:
 * `from` - a number representing the offset from the first result to be returned. The default if not specified is 0. (http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/search-request-from-size.html). This is optional.
 * `fields` - an array of strings representing the fields to return. Else the entire document is returned. (http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/search-request-fields.html). This is optional.
 * `timeout` - a number representing the timeout in milliseconds that should be given to elasticsearch to perform a command. This is optional.
+* `fetch_includes` - describe parts of the document that should be included in the response (e.g. some.nested.object.*)
+* `fetch_excludes` - describe parts of the document that should be excluded from the response (e.g. some.nested.object.*)
 
 An example message would be:
 

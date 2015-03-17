@@ -388,6 +388,28 @@ public class ElasticSearch extends BusModBase implements Handler<Message<JsonObj
             }
         }
 
+        JsonArray includes = body.getArray("fetch_includes");
+        final String[] includeArray;
+        if ( includes != null ) {
+            final List<Object> includeList = includes.toList();
+            includeArray = includeList.stream().map( x -> x.toString() ).toArray( String[]::new );
+        } else {
+            includeArray = new String[0];
+        }
+
+        JsonArray excludes = body.getArray("fetch_excludes");
+        final String[] excludeArray;
+        if ( excludes != null ) {
+            final List<Object> excludeList = excludes.toList();
+            excludeArray = excludeList.stream().map( x -> x.toString() ).toArray( String[]::new );
+        } else {
+            excludeArray = new String[0];
+        }
+
+        if ( includeArray.length > 0 || excludeArray.length > 0 ) {
+            builder.setFetchSource( includeArray, excludeArray );
+        }
+
         //Set query timeout
         Long queryTimeout = body.getLong("timeout");
         if (queryTimeout != null) {
