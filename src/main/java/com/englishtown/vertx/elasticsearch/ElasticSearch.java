@@ -17,6 +17,7 @@ import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.script.ScriptService;
+import org.elasticsearch.search.sort.SortOrder;
 import org.vertx.java.busmods.BusModBase;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.eventbus.Message;
@@ -385,6 +386,22 @@ public class ElasticSearch extends BusModBase implements Handler<Message<JsonObj
         if (fields != null) {
             for (int i = 0; i < fields.size(); i++) {
                 builder.addField(fields.<String>get(i));
+            }
+        }
+
+        // Set Sort fields:
+        final JsonObject sort = body.getObject("sort");
+        if ( sort != null ) {
+            for ( final String fieldName : sort.getFieldNames() ) {
+                final JsonObject orderObject = sort.getObject( fieldName );
+                final String orderValue = orderObject.getString("order");
+
+                SortOrder order = SortOrder.DESC;
+                if ( "asc".equalsIgnoreCase( orderValue ) ) {
+                    order = SortOrder.ASC;
+                }
+
+                builder.addSort( fieldName, order );
             }
         }
 

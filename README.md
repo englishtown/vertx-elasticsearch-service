@@ -283,7 +283,8 @@ Send a json message to the event bus with the following structure:
     "fields": <fields>,
     "timeout": <timeout>,
     "fetch_includes": <fetch_includes>,
-    "fetch_excludes": <fetch_excludes>
+    "fetch_excludes": <fetch_excludes>,
+    "sort" : <sort>
 }
 ```
 
@@ -308,6 +309,7 @@ Send a json message to the event bus with the following structure:
 * `timeout` - a number representing the timeout in milliseconds that should be given to elasticsearch to perform a command. This is optional.
 * `fetch_includes` - describe parts of the document that should be included in the response (e.g. some.nested.object.*)
 * `fetch_excludes` - describe parts of the document that should be excluded from the response (e.g. some.nested.object.*)
+* `sort` - sort order JSON Object in the form `{ "fieldName" : { "order" : "desc" } }`
 
 An example message would be:
 
