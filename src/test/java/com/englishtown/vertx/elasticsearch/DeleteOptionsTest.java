@@ -2,7 +2,6 @@ package com.englishtown.vertx.elasticsearch;
 
 import io.vertx.core.json.JsonObject;
 import org.elasticsearch.action.WriteConsistencyLevel;
-import org.elasticsearch.action.support.replication.ReplicationType;
 import org.elasticsearch.index.VersionType;
 import org.junit.Test;
 
@@ -26,7 +25,6 @@ public class DeleteOptionsTest {
                 .setConsistencyLevel(WriteConsistencyLevel.ALL)
                 .setParent("parent")
                 .setRefresh(true)
-                .setReplicationType(ReplicationType.ASYNC)
                 .setRouting("routing")
                 .setTimeout("timeout")
                 .setVersion(10000L)
@@ -34,7 +32,7 @@ public class DeleteOptionsTest {
 
         json1 = options1.toJson();
 
-        assertEquals(8, json1.fieldNames().size());
+        assertEquals(7, json1.fieldNames().size());
 
         DeleteOptions options2 = new DeleteOptions(json1);
         JsonObject json2 = options2.toJson();

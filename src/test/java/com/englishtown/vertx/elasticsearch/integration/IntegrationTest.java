@@ -2,9 +2,10 @@ package com.englishtown.vertx.elasticsearch.integration;
 
 import com.englishtown.vertx.elasticsearch.ElasticSearchService;
 import com.englishtown.vertx.elasticsearch.IndexOptions;
-import com.englishtown.vertx.elasticsearch.SearchScrollOptions;
 import com.englishtown.vertx.elasticsearch.SearchOptions;
+import com.englishtown.vertx.elasticsearch.SearchScrollOptions;
 import com.englishtown.vertx.elasticsearch.impl.DefaultElasticSearchService;
+import io.vertx.core.DeploymentOptions;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.test.core.VertxTestBase;
@@ -14,6 +15,7 @@ import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
+import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -37,8 +39,9 @@ public class IntegrationTest extends VertxTestBase {
         service = ElasticSearchService.createEventBusProxy(vertx, "et.elasticsearch");
 
         CountDownLatch latch = new CountDownLatch(1);
+        DeploymentOptions options = new DeploymentOptions().setConfig(readConfig());
 
-        vertx.deployVerticle("service:com.englishtown.vertx.vertx-elasticsearch-service", result -> {
+        vertx.deployVerticle("service:com.englishtown.vertx.vertx-elasticsearch-service", options, result -> {
             if (result.failed()) {
                 result.cause().printStackTrace();
                 fail();
@@ -60,7 +63,11 @@ public class IntegrationTest extends VertxTestBase {
 
         JsonObject source = new JsonObject()
                 .put("user", source_user)
-                .put("message", source_message);
+                .put("message", source_message)
+                .put("obj", new JsonObject()
+                        .put("array", new JsonArray()
+                                .add("1")
+                                .add("2")));
 
         IndexOptions options = new IndexOptions().setId(id);
 
@@ -74,7 +81,8 @@ public class IntegrationTest extends VertxTestBase {
             assertEquals(id, json.getString(DefaultElasticSearchService.CONST_ID));
             assertTrue(json.getInteger(DefaultElasticSearchService.CONST_VERSION, 0) > 0);
 
-            testComplete();
+            // Give elasticsearch time to index the document
+            vertx.setTimer(1000, id -> testComplete());
 
         });
 
@@ -188,6 +196,17 @@ public class IntegrationTest extends VertxTestBase {
         });
 
         await();
+    }
+
+    private JsonObject readConfig() {
+
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+
+        try (Scanner scanner = new Scanner(cl.getResourceAsStream("config.json")).useDelimiter("\\A")) {
+            String s = scanner.next();
+            return new JsonObject(s);
+        }
+
     }
 
 }

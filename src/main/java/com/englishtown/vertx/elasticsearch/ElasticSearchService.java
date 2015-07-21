@@ -10,6 +10,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.serviceproxy.ProxyHelper;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -91,7 +92,7 @@ public interface ElasticSearchService {
     }
 
     default void search(String index, SearchOptions options, Handler<AsyncResult<JsonObject>> resultHandler) {
-        search(Arrays.asList(index), options, resultHandler);
+        search(Collections.singletonList(index), options, resultHandler);
     }
 
     default void search(List<String> indices, Handler<AsyncResult<JsonObject>> resultHandler) {

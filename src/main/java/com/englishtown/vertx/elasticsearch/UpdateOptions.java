@@ -61,6 +61,7 @@ public class UpdateOptions extends AbstractWriteOptions<UpdateOptions> {
         scriptedUpsert = other.isScriptedUpsert();
     }
 
+    @SuppressWarnings("unchecked")
     public UpdateOptions(JsonObject json) {
         super(json);
 
@@ -131,7 +132,7 @@ public class UpdateOptions extends AbstractWriteOptions<UpdateOptions> {
     }
 
     public UpdateOptions addField(String field) {
-        fields .add(field);
+        fields.add(field);
         return this;
     }
 

@@ -4,7 +4,6 @@ import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.elasticsearch.action.search.SearchType;
-import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.search.sort.SortOrder;
 
 import java.util.ArrayList;

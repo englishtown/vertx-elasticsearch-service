@@ -20,13 +20,14 @@ public class JsonElasticSearchConfigurator implements ElasticSearchConfigurator 
     protected boolean clientTransportSniff;
     protected final List<TransportAddress> transportAddresses = new ArrayList<>();
 
+    public static final String CONFIG_NAME = "elasticsearch";
     public static final String CONFIG_TRANSPORT_ADDRESSES = "transportAddresses";
     public static final String CONFIG_HOSTNAME = "hostname";
     public static final String CONFIG_PORT = "port";
 
     @Inject
     public JsonElasticSearchConfigurator(Vertx vertx) {
-        this(vertx.getOrCreateContext().config());
+        this(getConfig(vertx));
     }
 
     public JsonElasticSearchConfigurator(JsonObject config) {
@@ -34,6 +35,16 @@ public class JsonElasticSearchConfigurator implements ElasticSearchConfigurator 
             throw new RuntimeException("JSON config was null");
         }
         init(config);
+    }
+
+    private static JsonObject getConfig(Vertx vertx) {
+        JsonObject config = vertx.getOrCreateContext().config();
+
+        if (config.containsKey(CONFIG_NAME)) {
+            config = config.getJsonObject(CONFIG_NAME);
+        }
+
+        return config;
     }
 
     protected void init(JsonObject config) {
