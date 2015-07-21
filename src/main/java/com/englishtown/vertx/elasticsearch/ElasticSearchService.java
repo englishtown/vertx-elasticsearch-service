@@ -136,4 +136,12 @@ public interface ElasticSearchService {
      */
     void delete(String index, String type, String id, DeleteOptions options, Handler<AsyncResult<JsonObject>> resultHandler);
 
+    /**
+     * Indexes a script on elasticsearch
+     *
+     * @param options       the options for the script
+     * @param resultHandler result handler callback
+     */
+    void putIndexedScript(PutIndexedScriptOptions options, Handler<AsyncResult<JsonObject>> resultHandler);
+
 }

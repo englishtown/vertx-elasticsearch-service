@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import io.vertx.serviceproxy.ProxyHelper;
+import com.englishtown.vertx.elasticsearch.PutIndexedScriptOptions;
 import com.englishtown.vertx.elasticsearch.DeleteOptions;
 import io.vertx.core.Vertx;
 import com.englishtown.vertx.elasticsearch.GetOptions;
@@ -176,6 +177,24 @@ public class ElasticSearchServiceVertxEBProxy implements ElasticSearchService {
     _json.put("options", options == null ? null : options.toJson());
     DeliveryOptions _deliveryOptions = new DeliveryOptions();
     _deliveryOptions.addHeader("action", "delete");
+    _vertx.eventBus().<JsonObject>send(_address, _json, _deliveryOptions, res -> {
+      if (res.failed()) {
+        resultHandler.handle(Future.failedFuture(res.cause()));
+      } else {
+        resultHandler.handle(Future.succeededFuture(res.result().body()));
+      }
+    });
+  }
+
+  public void putIndexedScript(PutIndexedScriptOptions options, Handler<AsyncResult<JsonObject>> resultHandler) {
+    if (closed) {
+      resultHandler.handle(Future.failedFuture(new IllegalStateException("Proxy is closed")));
+      return;
+    }
+    JsonObject _json = new JsonObject();
+    _json.put("options", options == null ? null : options.toJson());
+    DeliveryOptions _deliveryOptions = new DeliveryOptions();
+    _deliveryOptions.addHeader("action", "putIndexedScript");
     _vertx.eventBus().<JsonObject>send(_address, _json, _deliveryOptions, res -> {
       if (res.failed()) {
         resultHandler.handle(Future.failedFuture(res.cause()));

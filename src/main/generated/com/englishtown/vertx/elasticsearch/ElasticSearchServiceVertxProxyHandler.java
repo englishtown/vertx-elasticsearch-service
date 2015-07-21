@@ -37,6 +37,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import io.vertx.serviceproxy.ProxyHelper;
 import io.vertx.serviceproxy.ProxyHandler;
+import com.englishtown.vertx.elasticsearch.PutIndexedScriptOptions;
 import com.englishtown.vertx.elasticsearch.DeleteOptions;
 import io.vertx.core.Vertx;
 import com.englishtown.vertx.elasticsearch.GetOptions;
@@ -152,6 +153,10 @@ public class ElasticSearchServiceVertxProxyHandler extends ProxyHandler {
       }
       case "delete": {
         service.delete((java.lang.String)json.getValue("index"), (java.lang.String)json.getValue("type"), (java.lang.String)json.getValue("id"), json.getJsonObject("options") == null ? null : new com.englishtown.vertx.elasticsearch.DeleteOptions(json.getJsonObject("options")), createHandler(msg));
+        break;
+      }
+      case "putIndexedScript": {
+        service.putIndexedScript(json.getJsonObject("options") == null ? null : new com.englishtown.vertx.elasticsearch.PutIndexedScriptOptions(json.getJsonObject("options")), createHandler(msg));
         break;
       }
       default: {
