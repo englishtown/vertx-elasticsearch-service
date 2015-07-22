@@ -12,6 +12,8 @@ import org.elasticsearch.action.get.GetRequestBuilder;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.action.indexedscripts.put.PutIndexedScriptRequestBuilder;
+import org.elasticsearch.action.indexedscripts.put.PutIndexedScriptResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequestBuilder;
@@ -45,6 +47,8 @@ public class DefaultElasticSearchService implements ElasticSearchService {
     public static final String CONST_VERSION = "version";
     public static final String CONST_SOURCE = "source";
     public static final String CONST_CREATED = "created";
+    public static final String CONST_IS_CREATED = "isCreated";
+    public static final String CONST_SCRIPT_LANG = "lang";
 
     public static final Charset CHARSET_UTF8 = Charset.forName("UTF-8");
 
@@ -321,6 +325,36 @@ public class DefaultElasticSearchService implements ElasticSearchService {
             }
         });
 
+    }
+
+    @Override
+    public void putIndexedScript(PutIndexedScriptOptions options, Handler<AsyncResult<JsonObject>> resultHandler) {
+
+        PutIndexedScriptRequestBuilder builder = client.preparePutIndexedScript();
+
+        if (options != null) {
+            if (options.getScriptLang() != null) builder.setScriptLang(options.getScriptLang());
+            if (options.getId() != null) builder.setId(options.getId());
+            if (options.getSource() != null) builder.setSource(options.getSource().encode().getBytes(CHARSET_UTF8));
+        }
+
+        builder.execute(new ActionListener<PutIndexedScriptResponse>() {
+            @Override
+            public void onResponse(PutIndexedScriptResponse putIndexedScriptResponse) {
+                JsonObject json = new JsonObject()
+                        .put(CONST_INDEX, putIndexedScriptResponse.getIndex())
+                        .put(CONST_SCRIPT_LANG, putIndexedScriptResponse.getScriptLang())
+                        .put(CONST_ID, putIndexedScriptResponse.getId())
+                        .put(CONST_IS_CREATED, putIndexedScriptResponse.isCreated())
+                        .put(CONST_VERSION, putIndexedScriptResponse.getVersion());
+                resultHandler.handle(Future.succeededFuture(json));
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+                resultHandler.handle(Future.failedFuture(t));
+            }
+        });
     }
 
     protected JsonObject readResponse(ToXContent toXContent) {

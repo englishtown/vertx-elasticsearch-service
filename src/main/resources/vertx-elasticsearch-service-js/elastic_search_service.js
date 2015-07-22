@@ -26,6 +26,7 @@ var GetOptions = com.englishtown.vertx.elasticsearch.GetOptions;
 var SearchOptions = com.englishtown.vertx.elasticsearch.SearchOptions;
 var SearchScrollOptions = com.englishtown.vertx.elasticsearch.SearchScrollOptions;
 var DeleteOptions = com.englishtown.vertx.elasticsearch.DeleteOptions;
+var PutIndexedScriptOptions = com.englishtown.vertx.elasticsearch.PutIndexedScriptOptions;
 
 /**
  ElasticSearch service
@@ -185,6 +186,26 @@ var ElasticSearchService = function(j_val) {
     var __args = arguments;
     if (__args.length === 5 && typeof __args[0] === 'string' && typeof __args[1] === 'string' && typeof __args[2] === 'string' && typeof __args[3] === 'object' && typeof __args[4] === 'function') {
       j_elasticSearchService["delete(java.lang.String,java.lang.String,java.lang.String,com.englishtown.vertx.elasticsearch.DeleteOptions,io.vertx.core.Handler)"](index, type, id, options != null ? new DeleteOptions(new JsonObject(JSON.stringify(options))) : null, function(ar) {
+      if (ar.succeeded()) {
+        resultHandler(utils.convReturnJson(ar.result()), null);
+      } else {
+        resultHandler(null, ar.cause());
+      }
+    });
+    } else utils.invalidArgs();
+  };
+
+  /**
+   Indexes a script on elasticsearch
+
+   @public
+   @param options {Object} the options for the script 
+   @param resultHandler {function} result handler callback 
+   */
+  this.putIndexedScript = function(options, resultHandler) {
+    var __args = arguments;
+    if (__args.length === 2 && typeof __args[0] === 'object' && typeof __args[1] === 'function') {
+      j_elasticSearchService["putIndexedScript(com.englishtown.vertx.elasticsearch.PutIndexedScriptOptions,io.vertx.core.Handler)"](options != null ? new PutIndexedScriptOptions(new JsonObject(JSON.stringify(options))) : null, function(ar) {
       if (ar.succeeded()) {
         resultHandler(utils.convReturnJson(ar.result()), null);
       } else {
