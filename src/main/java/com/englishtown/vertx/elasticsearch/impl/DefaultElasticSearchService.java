@@ -76,7 +76,7 @@ public class DefaultElasticSearchService implements ElasticSearchService {
     public void index(String index, String type, JsonObject source, IndexOptions options, Handler<AsyncResult<JsonObject>> resultHandler) {
 
         IndexRequestBuilder builder = client.prepareIndex(index, type)
-                .setSource(source.getMap());
+                .setSource(source.encode());
 
         if (options != null) {
             if (options.getId() != null) builder.setId(options.getId());
