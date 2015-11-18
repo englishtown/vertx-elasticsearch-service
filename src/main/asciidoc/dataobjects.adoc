@@ -16,27 +16,6 @@
 |[[order]]`order`|`link:enums.html#SortOrder[SortOrder]`|-
 |===
 
-[[DeleteOptions]]
-== DeleteOptions
-
-++++
- Delete operation options
-++++
-'''
-
-[cols=">25%,^25%,50%"]
-[frame="topbot"]
-|===
-^|Name | Type ^| Description
-|[[consistencyLevel]]`consistencyLevel`|`link:enums.html#WriteConsistencyLevel[WriteConsistencyLevel]`|-
-|[[parent]]`parent`|`String`|-
-|[[refresh]]`refresh`|`Boolean`|-
-|[[routing]]`routing`|`String`|-
-|[[timeout]]`timeout`|`String`|-
-|[[version]]`version`|`Number (Long)`|-
-|[[versionType]]`versionType`|`link:enums.html#VersionType[VersionType]`|-
-|===
-
 [[UpdateOptions]]
 == UpdateOptions
 
@@ -63,6 +42,27 @@
 |[[scriptedUpsert]]`scriptedUpsert`|`Boolean`|-
 |[[timeout]]`timeout`|`String`|-
 |[[upsert]]`upsert`|`Json object`|-
+|[[version]]`version`|`Number (Long)`|-
+|[[versionType]]`versionType`|`link:enums.html#VersionType[VersionType]`|-
+|===
+
+[[DeleteOptions]]
+== DeleteOptions
+
+++++
+ Delete operation options
+++++
+'''
+
+[cols=">25%,^25%,50%"]
+[frame="topbot"]
+|===
+^|Name | Type ^| Description
+|[[consistencyLevel]]`consistencyLevel`|`link:enums.html#WriteConsistencyLevel[WriteConsistencyLevel]`|-
+|[[parent]]`parent`|`String`|-
+|[[refresh]]`refresh`|`Boolean`|-
+|[[routing]]`routing`|`String`|-
+|[[timeout]]`timeout`|`String`|-
 |[[version]]`version`|`Number (Long)`|-
 |[[versionType]]`versionType`|`link:enums.html#VersionType[VersionType]`|-
 |===

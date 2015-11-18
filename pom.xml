@@ -71,6 +71,12 @@
             <version>${vertx.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-rx-java</artifactId>
+            <version>${vertx.version}</version>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 
     <build>
