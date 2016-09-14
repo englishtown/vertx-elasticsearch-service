@@ -51,12 +51,14 @@ import com.englishtown.vertx.elasticsearch.SuggestOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
+import com.englishtown.vertx.elasticsearch.DeleteByQueryOptions;
 import com.englishtown.vertx.elasticsearch.SearchScrollOptions;
 
 /*
   Generated Proxy code - DO NOT EDIT
   @author Roger the Robot
 */
+@SuppressWarnings({"unchecked", "rawtypes"})
 public class ElasticSearchServiceVertxProxyHandler extends ProxyHandler {
 
   public static final long DEFAULT_CONNECTION_TIMEOUT = 5 * 60; // 5 minutes 
@@ -164,6 +166,10 @@ public class ElasticSearchServiceVertxProxyHandler extends ProxyHandler {
         }
         case "suggest": {
           service.suggest((java.lang.String)json.getValue("index"), json.getJsonObject("options") == null ? null : new com.englishtown.vertx.elasticsearch.SuggestOptions(json.getJsonObject("options")), createHandler(msg));
+          break;
+        }
+        case "deleteByQuery": {
+          service.deleteByQuery(convertList(json.getJsonArray("indices").getList()), json.getJsonObject("options") == null ? null : new com.englishtown.vertx.elasticsearch.DeleteByQueryOptions(json.getJsonObject("options")), createHandler(msg));
           break;
         }
         default: {

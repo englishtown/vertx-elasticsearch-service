@@ -1,6 +1,12 @@
 package com.englishtown.vertx.elasticsearch.integration;
 
-import com.englishtown.vertx.elasticsearch.*;
+import com.englishtown.vertx.elasticsearch.DeleteByQueryOptions;
+import com.englishtown.vertx.elasticsearch.ElasticSearchAdminService;
+import com.englishtown.vertx.elasticsearch.ElasticSearchService;
+import com.englishtown.vertx.elasticsearch.IndexOptions;
+import com.englishtown.vertx.elasticsearch.SearchOptions;
+import com.englishtown.vertx.elasticsearch.SearchScrollOptions;
+import com.englishtown.vertx.elasticsearch.SuggestOptions;
 import com.englishtown.vertx.elasticsearch.impl.DefaultElasticSearchService;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.eventbus.DeliveryOptions;
@@ -8,17 +14,14 @@ import io.vertx.core.eventbus.ReplyException;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.test.core.VertxTestBase;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.action.search.SearchType;
-import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.search.sort.SortOrder;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 import java.util.Scanner;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -39,27 +42,6 @@ public abstract class IntegrationTestBase extends VertxTestBase {
     private String source_message = "vertx elastic search";
 
     protected JsonObject config;
-
-    private static EmbeddedElasticsearchServer server;
-
-    @BeforeClass
-    public static void beforeClass() throws Exception {
-        String embedded = System.getProperty("test.embedded");
-        if (Boolean.parseBoolean(embedded)) {
-            server = new EmbeddedElasticsearchServer();
-            ClusterHealthResponse response = server.waitForYellowStatus();
-            if (response.getStatus() == ClusterHealthStatus.RED) {
-                throw new IllegalStateException("Cluster status red!");
-            }
-        }
-    }
-
-    @AfterClass
-    public static void afterClass() throws Exception {
-        if (server != null) {
-            server.close();
-        }
-    }
 
     @Override
     public void setUp() throws Exception {
@@ -286,6 +268,52 @@ public abstract class IntegrationTestBase extends VertxTestBase {
 
             });
 
+        });
+
+        await();
+    }
+
+    @Test
+    public void test7DeleteByQuery_Simple() throws Exception {
+
+        JsonObject source = new JsonObject()
+                .put("user", source_user)
+                .put("message", source_message)
+                .put("obj", new JsonObject()
+                        .put("array", new JsonArray()
+                                .add("1")
+                                .add("2")));
+
+        final UUID documentId = UUID.randomUUID();
+        IndexOptions indexOptions = new IndexOptions().setId(documentId.toString());
+
+        service.index(index, type, source, indexOptions, indexResult -> {
+
+            assertTrue(indexResult.succeeded());
+
+            // Give elasticsearch time to index the document
+            vertx.setTimer(2000, id -> {
+                DeleteByQueryOptions deleteByQueryOptions = new DeleteByQueryOptions()
+                        .setTimeout("1000")
+                        .setQuery(new JsonObject().put("ids", new JsonObject().put("values", new JsonArray().add(documentId.toString()))));
+
+                service.deleteByQuery(index, deleteByQueryOptions, deleteByQueryResult -> {
+
+                    assertTrue(deleteByQueryResult.succeeded());
+                    JsonObject json = deleteByQueryResult.result();
+                    System.out.println(json);
+                    assertNotNull(json);
+
+                    assertNotNull(json.getJsonObject("_indices"));
+                    assertNotNull(json.getJsonObject("_indices").getJsonObject(index));
+                    assertNotNull(json.getJsonObject("_indices").getJsonObject("_all"));
+                    assertEquals((Integer) 1, json.getJsonObject("_indices").getJsonObject(index).getInteger("found"));
+                    assertEquals((Integer) 1, json.getJsonObject("_indices").getJsonObject(index).getInteger("deleted"));
+                    assertEquals((Integer) 0, json.getJsonObject("_indices").getJsonObject(index).getInteger("failed"));
+
+                    testComplete();
+                });
+            });
         });
 
         await();

@@ -1,0 +1,7 @@
+ports:
+  - 9200
+  - 9300
+
+healthChecks:
+  logPatterns:
+    - pattern: started
