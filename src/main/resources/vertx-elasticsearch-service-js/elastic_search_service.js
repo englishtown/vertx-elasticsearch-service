@@ -27,6 +27,7 @@ var SearchOptions = com.englishtown.vertx.elasticsearch.SearchOptions;
 var IndexOptions = com.englishtown.vertx.elasticsearch.IndexOptions;
 var SuggestOptions = com.englishtown.vertx.elasticsearch.SuggestOptions;
 var GetOptions = com.englishtown.vertx.elasticsearch.GetOptions;
+var DeleteByQueryOptions = com.englishtown.vertx.elasticsearch.DeleteByQueryOptions;
 var SearchScrollOptions = com.englishtown.vertx.elasticsearch.SearchScrollOptions;
 
 /**
@@ -208,6 +209,27 @@ var ElasticSearchService = function(j_val) {
     var __args = arguments;
     if (__args.length === 3 && typeof __args[0] === 'string' && (typeof __args[1] === 'object' && __args[1] != null) && typeof __args[2] === 'function') {
       j_elasticSearchService["suggest(java.lang.String,com.englishtown.vertx.elasticsearch.SuggestOptions,io.vertx.core.Handler)"](index, options != null ? new SuggestOptions(new JsonObject(JSON.stringify(options))) : null, function(ar) {
+      if (ar.succeeded()) {
+        resultHandler(utils.convReturnJson(ar.result()), null);
+      } else {
+        resultHandler(null, ar.cause());
+      }
+    });
+    } else throw new TypeError('function invoked with invalid arguments');
+  };
+
+  /**
+   https://www.elastic.co/guide/en/elasticsearch/plugins/2.2/plugins-delete-by-query.html
+
+   @public
+   @param indices {Array.<string>} the index names 
+   @param options {Object} delete by query options (timeout, etc.) 
+   @param resultHandler {function} result handler callback 
+   */
+  this.deleteByQuery = function(indices, options, resultHandler) {
+    var __args = arguments;
+    if (__args.length === 3 && typeof __args[0] === 'object' && __args[0] instanceof Array && (typeof __args[1] === 'object' && __args[1] != null) && typeof __args[2] === 'function') {
+      j_elasticSearchService["deleteByQuery(java.util.List,com.englishtown.vertx.elasticsearch.DeleteByQueryOptions,io.vertx.core.Handler)"](utils.convParamListBasicOther(indices), options != null ? new DeleteByQueryOptions(new JsonObject(JSON.stringify(options))) : null, function(ar) {
       if (ar.succeeded()) {
         resultHandler(utils.convReturnJson(ar.result()), null);
       } else {

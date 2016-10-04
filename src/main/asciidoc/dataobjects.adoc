@@ -1,5 +1,23 @@
 = Cheatsheets
 
+[[DeleteByQueryOptions]]
+== DeleteByQueryOptions
+
+++++
+ Delete by query operation options
+++++
+'''
+
+[cols=">25%,^25%,50%"]
+[frame="topbot"]
+|===
+^|Name | Type ^| Description
+|[[query]]`query`|`Json object`|-
+|[[routing]]`routing`|`String`|-
+|[[timeout]]`timeout`|`String`|-
+|[[types]]`types`|`Array of String`|-
+|===
+
 [[DeleteOptions]]
 == DeleteOptions
 
@@ -160,7 +178,6 @@
 == SuggestOptions
 
 ++++
- @author marcus
 ++++
 '''
 

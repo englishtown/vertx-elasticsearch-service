@@ -44,6 +44,7 @@ import com.englishtown.vertx.elasticsearch.MappingOptions;
   Generated Proxy code - DO NOT EDIT
   @author Roger the Robot
 */
+@SuppressWarnings({"unchecked", "rawtypes"})
 public class ElasticSearchAdminServiceVertxEBProxy implements ElasticSearchAdminService {
 
   private Vertx _vertx;

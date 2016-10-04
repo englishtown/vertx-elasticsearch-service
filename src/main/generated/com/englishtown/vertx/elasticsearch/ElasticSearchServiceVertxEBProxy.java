@@ -44,12 +44,14 @@ import com.englishtown.vertx.elasticsearch.SuggestOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
+import com.englishtown.vertx.elasticsearch.DeleteByQueryOptions;
 import com.englishtown.vertx.elasticsearch.SearchScrollOptions;
 
 /*
   Generated Proxy code - DO NOT EDIT
   @author Roger the Robot
 */
+@SuppressWarnings({"unchecked", "rawtypes"})
 public class ElasticSearchServiceVertxEBProxy implements ElasticSearchService {
 
   private Vertx _vertx;
@@ -209,6 +211,25 @@ public class ElasticSearchServiceVertxEBProxy implements ElasticSearchService {
     _json.put("options", options == null ? null : options.toJson());
     DeliveryOptions _deliveryOptions = (_options != null) ? new DeliveryOptions(_options) : new DeliveryOptions();
     _deliveryOptions.addHeader("action", "suggest");
+    _vertx.eventBus().<JsonObject>send(_address, _json, _deliveryOptions, res -> {
+      if (res.failed()) {
+        resultHandler.handle(Future.failedFuture(res.cause()));
+      } else {
+        resultHandler.handle(Future.succeededFuture(res.result().body()));
+      }
+    });
+  }
+
+  public void deleteByQuery(List<String> indices, DeleteByQueryOptions options, Handler<AsyncResult<JsonObject>> resultHandler) {
+    if (closed) {
+      resultHandler.handle(Future.failedFuture(new IllegalStateException("Proxy is closed")));
+      return;
+    }
+    JsonObject _json = new JsonObject();
+    _json.put("indices", new JsonArray(indices));
+    _json.put("options", options == null ? null : options.toJson());
+    DeliveryOptions _deliveryOptions = (_options != null) ? new DeliveryOptions(_options) : new DeliveryOptions();
+    _deliveryOptions.addHeader("action", "deleteByQuery");
     _vertx.eventBus().<JsonObject>send(_address, _json, _deliveryOptions, res -> {
       if (res.failed()) {
         resultHandler.handle(Future.failedFuture(res.cause()));

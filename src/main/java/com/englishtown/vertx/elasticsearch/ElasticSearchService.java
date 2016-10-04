@@ -160,4 +160,19 @@ public interface ElasticSearchService {
      */
     void suggest(String index, SuggestOptions options, Handler<AsyncResult<JsonObject>> resultHandler);
 
+
+    @GenIgnore
+    @ProxyIgnore
+    default void deleteByQuery(String index, DeleteByQueryOptions options, Handler<AsyncResult<JsonObject>> resultHandler) {
+        deleteByQuery(Collections.singletonList(index), options, resultHandler);
+    }
+
+    /**
+     * https://www.elastic.co/guide/en/elasticsearch/plugins/2.2/plugins-delete-by-query.html
+     *
+     * @param indices       the index names
+     * @param options       delete by query options (timeout, etc.)
+     * @param resultHandler result handler callback
+     */
+    void deleteByQuery(List<String> indices, DeleteByQueryOptions options, Handler<AsyncResult<JsonObject>> resultHandler);
 }

@@ -18,9 +18,13 @@
         <vertx.hk2.version>2.4.0</vertx.hk2.version>
         <vertx.guice.version>2.3.0</vertx.guice.version>
         <when.version>4.1.1</when.version>
+        <hamcrest.version>1.3</hamcrest.version>
 
         <!--Vert.x codegen does not play nice with maven-compiler-plugin 3.2-->
         <maven.compiler.plugin.version>3.1</maven.compiler.plugin.version>
+        <maven.docker.plugin.version>2.11.13</maven.docker.plugin.version>
+        <maven.surefire.plugin.version>2.14</maven.surefire.plugin.version>
+        <maven.failsafe.plugin.version>2.14</maven.failsafe.plugin.version>
 
         <!--Test properties-->
         <test.es.hostname>localhost</test.es.hostname>
@@ -43,6 +47,11 @@
         <dependency>
             <groupId>org.elasticsearch</groupId>
             <artifactId>elasticsearch</artifactId>
+            <version>${es.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.elasticsearch.plugin</groupId>
+            <artifactId>delete-by-query</artifactId>
             <version>${es.version}</version>
         </dependency>
         <dependency>
@@ -98,50 +107,19 @@
             <artifactId>vertx-service-factory</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-unit</artifactId>
+            <version>${vertx.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest-all</artifactId>
+            <version>${hamcrest.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
-
-    <profiles>
-        <profile>
-            <id>embedded</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <properties>
-                <test.es.port>19300</test.es.port>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <systemPropertyVariables>
-                                <test.embedded>true</test.embedded>
-                            </systemPropertyVariables>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-failsafe-plugin</artifactId>
-                        <configuration>
-                            <systemPropertyVariables>
-                                <test.embedded>true</test.embedded>
-                            </systemPropertyVariables>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>localhost</id>
-        </profile>
-        <profile>
-            <id>dockerhost</id>
-            <properties>
-                <test.es.hostname>dockerhost</test.es.hostname>
-            </properties>
-        </profile>
-    </profiles>
 
     <build>
         <testResources>
@@ -170,7 +148,70 @@
                     </execution>
                 </executions>
             </plugin>
-
+            <plugin>
+                <groupId>com.alexecollins.docker</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
+                <version>${maven.docker.plugin.version}</version>
+                <configuration>
+                    <removeIntermediateImages>true</removeIntermediateImages>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>package</id>
+                        <goals>
+                            <goal>package</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>start</id>
+                        <goals>
+                            <goal>start</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>stop</id>
+                        <goals>
+                            <goal>stop</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.alexecollins.docker</groupId>
+                        <artifactId>docker-java-orchestration-plugin-boot2docker</artifactId>
+                        <version>${maven.docker.plugin.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven.surefire.plugin.version}</version>
+                <configuration>
+                    <excludes>
+                        <exclude>**/*IntegrationTest.java</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>${maven.failsafe.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>integration-tests</id>
+                        <configuration>
+                            <includes>
+                                <include>**/*IntegrationTest.java</include>
+                            </includes>
+                        </configuration>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
