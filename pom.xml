@@ -22,7 +22,7 @@
 
         <!--Vert.x codegen does not play nice with maven-compiler-plugin 3.2-->
         <maven.compiler.plugin.version>3.1</maven.compiler.plugin.version>
-        <maven.docker.plugin.version>2.11.13</maven.docker.plugin.version>
+        <maven.docker.plugin.version>2.11.17</maven.docker.plugin.version>
         <maven.surefire.plugin.version>2.14</maven.surefire.plugin.version>
         <maven.failsafe.plugin.version>2.14</maven.failsafe.plugin.version>
 
@@ -154,6 +154,8 @@
                 <version>${maven.docker.plugin.version}</version>
                 <configuration>
                     <removeIntermediateImages>true</removeIntermediateImages>
+		    <version>1.23</version>
+                    <versionAutoDetect>false</versionAutoDetect>
                 </configuration>
                 <executions>
                     <execution>
@@ -179,7 +181,7 @@
                     <dependency>
                         <groupId>com.alexecollins.docker</groupId>
                         <artifactId>docker-java-orchestration-plugin-boot2docker</artifactId>
-                        <version>${maven.docker.plugin.version}</version>
+                        <version>2.11.19</version>
                     </dependency>
                 </dependencies>
             </plugin>
