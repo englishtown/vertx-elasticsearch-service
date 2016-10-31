@@ -1,34 +1,43 @@
 package com.englishtown.vertx.elasticsearch.integration;
 
-import com.englishtown.vertx.elasticsearch.*;
+import com.englishtown.vertx.elasticsearch.AbstractVertxIntegrationTest;
+import com.englishtown.vertx.elasticsearch.DeleteByQueryOptions;
+import com.englishtown.vertx.elasticsearch.ElasticSearchAdminService;
+import com.englishtown.vertx.elasticsearch.ElasticSearchService;
+import com.englishtown.vertx.elasticsearch.IndexOptions;
+import com.englishtown.vertx.elasticsearch.SearchOptions;
+import com.englishtown.vertx.elasticsearch.SearchScrollOptions;
+import com.englishtown.vertx.elasticsearch.SuggestOptions;
 import com.englishtown.vertx.elasticsearch.impl.DefaultElasticSearchService;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.ReplyException;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.test.core.VertxTestBase;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
+import io.vertx.ext.unit.Async;
+import io.vertx.ext.unit.TestContext;
 import org.elasticsearch.action.search.SearchType;
-import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.search.sort.SortOrder;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 import java.util.Scanner;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.UUID;
 
+import static com.englishtown.vertx.elasticsearch.VertxMatcherAssert.assertThat;
 import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.notNullValue;
 
 /**
  * {@link com.englishtown.vertx.elasticsearch.ElasticSearchServiceVerticle} integration test
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public abstract class IntegrationTestBase extends VertxTestBase {
+public abstract class IntegrationTestBase extends AbstractVertxIntegrationTest {
 
     private ElasticSearchService service;
     private ElasticSearchAdminService adminService;
@@ -40,65 +49,30 @@ public abstract class IntegrationTestBase extends VertxTestBase {
 
     protected JsonObject config;
 
-    private static EmbeddedElasticsearchServer server;
+    protected abstract String getVerticleName();
+    protected abstract void configure(JsonObject config);
 
-    @BeforeClass
-    public static void beforeClass() throws Exception {
-        String embedded = System.getProperty("test.embedded");
-        if (Boolean.parseBoolean(embedded)) {
-            server = new EmbeddedElasticsearchServer();
-            ClusterHealthResponse response = server.waitForYellowStatus();
-            if (response.getStatus() == ClusterHealthStatus.RED) {
-                throw new IllegalStateException("Cluster status red!");
-            }
-        }
-    }
+    @Before
+    public void setUp(TestContext testContext) throws Exception {
+        config = readConfig();
+        configure(config);
 
-    @AfterClass
-    public static void afterClass() throws Exception {
-        if (server != null) {
-            server.close();
-        }
-    }
-
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
+        deployVerticle(testContext, getVerticleName(), new DeploymentOptions().setConfig(config));
 
         service = ElasticSearchService.createEventBusProxy(vertx, "et.elasticsearch");
         adminService = ElasticSearchAdminService.createEventBusProxy(vertx, "et.elasticsearch.admin");
-
-        config = readConfig();
-        deployVerticle();
     }
 
-    protected abstract void deployVerticle() throws Exception;
-
-    protected void deployVerticle(String name) throws Exception {
-
-        CountDownLatch latch = new CountDownLatch(1);
-        DeploymentOptions options = new DeploymentOptions().setConfig(config);
-
-        vertx.deployVerticle(name, options, result -> {
-            if (result.failed()) {
-                result.cause().printStackTrace();
-                fail();
-            }
-            latch.countDown();
-        });
-
-        latch.await(2, TimeUnit.SECONDS);
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
+    @After
+    public void tearDown() throws Exception {
         service.stop();
+        destroyVerticle();
     }
 
     @Test
-    public void test1Index() throws Exception {
+    public void test1Index(TestContext testContext) throws Exception {
 
+        final Async async = testContext.async();
         JsonObject source = new JsonObject()
                 .put("user", source_user)
                 .put("message", source_message)
@@ -108,55 +82,50 @@ public abstract class IntegrationTestBase extends VertxTestBase {
                                 .add("2")));
 
         IndexOptions options = new IndexOptions().setId(id);
-
         service.index(index, type, source, options, result -> {
 
-            assertTrue(result.succeeded());
+            assertThat(testContext, result.succeeded(), is(true));
             JsonObject json = result.result();
 
-            assertEquals(index, json.getString(DefaultElasticSearchService.CONST_INDEX));
-            assertEquals(type, json.getString(DefaultElasticSearchService.CONST_TYPE));
-            assertEquals(id, json.getString(DefaultElasticSearchService.CONST_ID));
-            assertTrue(json.getInteger(DefaultElasticSearchService.CONST_VERSION, 0) > 0);
+            assertThat(testContext, json.getString(DefaultElasticSearchService.CONST_INDEX), is(index));
+            assertThat(testContext, json.getString(DefaultElasticSearchService.CONST_TYPE), is(type));
+            assertThat(testContext, json.getString(DefaultElasticSearchService.CONST_ID), is(id));
+            assertThat(testContext, json.getInteger(DefaultElasticSearchService.CONST_VERSION, 0), greaterThan(0));
 
             // Give elasticsearch time to index the document
-            vertx.setTimer(1000, id -> testComplete());
+            vertx.setTimer(1000, id -> async.complete());
 
         });
-
-        await();
-
     }
 
     @Test
-    public void test2Get() throws Exception {
+    public void test2Get(TestContext testContext) throws Exception {
 
+        final Async async = testContext.async();
         service.get(index, type, id, result -> {
 
-            assertTrue(result.succeeded());
+            assertThat(testContext, result.succeeded(), is(true));
             JsonObject body = result.result();
 
-            assertEquals(index, body.getString(DefaultElasticSearchService.CONST_INDEX));
-            assertEquals(type, body.getString(DefaultElasticSearchService.CONST_TYPE));
-            assertEquals(id, body.getString(DefaultElasticSearchService.CONST_ID));
-            assertTrue(body.getInteger(DefaultElasticSearchService.CONST_VERSION, 0) > 0);
+            assertThat(testContext, body.getString(DefaultElasticSearchService.CONST_INDEX), is(index));
+            assertThat(testContext, body.getString(DefaultElasticSearchService.CONST_TYPE), is(type));
+            assertThat(testContext, body.getString(DefaultElasticSearchService.CONST_ID), is(id));
+            assertThat(testContext, body.getInteger(DefaultElasticSearchService.CONST_VERSION, 0), greaterThan(0));
 
             JsonObject source = body.getJsonObject(DefaultElasticSearchService.CONST_SOURCE);
-            assertNotNull(source);
-            assertEquals(source_user, source.getString("user"));
-            assertEquals(source_message, source.getString("message"));
+            assertThat(testContext, source, notNullValue());
+            assertThat(testContext, source.getString("user"), is(source_user));
+            assertThat(testContext, source.getString("message"), is(source_message));
 
-            testComplete();
+            async.complete();
 
         });
-
-        await();
-
     }
 
     @Test
-    public void test3Search_Simple() throws Exception {
+    public void test3Search_Simple(TestContext testContext) throws Exception {
 
+        final Async async = testContext.async();
         SearchOptions options = new SearchOptions()
                 .setTimeout("1000")
                 .setSize(10)
@@ -168,19 +137,18 @@ public abstract class IntegrationTestBase extends VertxTestBase {
 
         service.search(index, options, result -> {
 
-            assertTrue(result.succeeded());
+            assertThat(testContext, result.succeeded(), is(true));
             JsonObject json = result.result();
-            assertNotNull(json);
-            testComplete();
+            assertThat(testContext, json, notNullValue());
+            async.complete();
 
         });
-
-        await();
     }
 
     @Test
-    public void test4Search_EventBus_Invalid_Enum() throws Exception {
+    public void test4Search_EventBus_Invalid_Enum(TestContext testContext) throws Exception {
 
+        final Async async = testContext.async();
         JsonObject json = new JsonObject()
                 .put("indices", new JsonArray().add(index))
                 .put("options", new JsonObject().put("templateType", "invalid_type"));
@@ -189,18 +157,17 @@ public abstract class IntegrationTestBase extends VertxTestBase {
         options.addHeader("action", "search");
 
         vertx.eventBus().<JsonObject>send("et.elasticsearch", json, options, res -> {
-            assertTrue(res.failed());
+            assertThat(testContext, res.failed(), is(true));
             Throwable t = res.cause();
-            assertThat(t, instanceOf(ReplyException.class));
-            testComplete();
+            assertThat(testContext, t, instanceOf(ReplyException.class));
+            async.complete();
         });
-
-        await();
     }
 
     @Test
-    public void test5Scroll() throws Exception {
+    public void test5Scroll(TestContext testContext) throws Exception {
 
+        final Async async = testContext.async();
         SearchOptions options = new SearchOptions()
                 .setSearchType(SearchType.SCAN)
                 .setScroll("5m")
@@ -208,46 +175,40 @@ public abstract class IntegrationTestBase extends VertxTestBase {
 
         service.search(index, options, result1 -> {
 
-            assertTrue(result1.succeeded());
+            assertThat(testContext, result1.succeeded(), is(true));
             JsonObject json = result1.result();
 
             String scrollId = json.getString("_scroll_id");
-            assertNotNull(scrollId);
+            assertThat(testContext, scrollId, notNullValue());
 
             SearchScrollOptions scrollOptions = new SearchScrollOptions().setScroll("5m");
 
             service.searchScroll(scrollId, scrollOptions, result2 -> {
 
-                assertTrue(result2.succeeded());
+                assertThat(testContext, result2.succeeded(), is(true));
                 JsonObject json2 = result2.result();
 
                 JsonObject hits = json2.getJsonObject("hits");
-                assertNotNull(hits);
+                assertThat(testContext, hits, notNullValue());
                 JsonArray hitsArray = hits.getJsonArray("hits");
-                assertNotNull(hitsArray);
-                assertTrue(hitsArray.size() > 0);
+                assertThat(testContext, hitsArray, notNullValue());
+                assertThat(testContext, hitsArray.size(), greaterThan(0));
 
-                testComplete();
-
+                async.complete();
             });
 
         });
-
-        await();
     }
 
     @Test
-    public void test6Suggest() throws Exception {
+    public void test6Suggest(TestContext testContext) throws Exception {
 
+        final Async async = testContext.async();
         JsonObject mapping = readJson("mapping.json");
 
         adminService.putMapping(index, type, mapping, result1 -> {
 
-            if (result1.failed()) {
-                result1.cause().printStackTrace();
-                fail();
-                return;
-            }
+            assertThat(testContext, result1.succeeded(), is(true));
 
             JsonObject source = new JsonObject()
                     .put("user", source_user)
@@ -257,11 +218,7 @@ public abstract class IntegrationTestBase extends VertxTestBase {
 
             service.index(index, type, source, result2 -> {
 
-                if (result2.failed()) {
-                    result1.cause().printStackTrace();
-                    fail();
-                    return;
-                }
+                assertThat(testContext, result2.succeeded(), is(true));
 
                 // Delay 1s to give time for indexing
                 vertx.setTimer(1000, id -> {
@@ -272,43 +229,84 @@ public abstract class IntegrationTestBase extends VertxTestBase {
 
                     service.suggest(index, options, result3 -> {
 
-                        assertTrue(result3.succeeded());
+                        assertThat(testContext, result3.succeeded(), is(true));
                         JsonObject json = result3.result();
 
-                        assertNotNull(json.getJsonArray("test-suggest"));
-                        assertNotNull(json.getJsonArray("test-suggest").getJsonObject(0));
-                        assertEquals(Integer.valueOf(1), json.getJsonArray("test-suggest").getJsonObject(0).getInteger("length"));
-                        assertEquals(source_message, json.getJsonArray("test-suggest").getJsonObject(0).getJsonArray("options").getJsonObject(0).getString("text"));
+                        assertThat(testContext, json.getJsonArray("test-suggest"), notNullValue());
+                        assertThat(testContext, json.getJsonArray("test-suggest").getJsonObject(0), notNullValue());
+                        assertThat(testContext, json.getJsonArray("test-suggest").getJsonObject(0).getInteger("length"), is(1));
+                        assertThat(testContext, json.getJsonArray("test-suggest").getJsonObject(0).getJsonArray("options").getJsonObject(0).getString("text"), is(source_message));
 
-                        testComplete();
+                        async.complete();
                     });
                 });
 
             });
-
         });
-
-        await();
     }
 
     @Test
-    public void test99Delete() throws Exception {
+    public void test7DeleteByQuery_Simple(TestContext testContext) throws Exception {
 
+        final Async async = testContext.async();
+        JsonObject source = new JsonObject()
+                .put("user", source_user)
+                .put("message", source_message)
+                .put("obj", new JsonObject()
+                        .put("array", new JsonArray()
+                                .add("1")
+                                .add("2")));
+
+        final UUID documentId = UUID.randomUUID();
+        IndexOptions indexOptions = new IndexOptions().setId(documentId.toString());
+
+        service.index(index, type, source, indexOptions, indexResult -> {
+
+            assertThat(testContext, indexResult.succeeded(), is(true));
+
+            // Give elasticsearch time to index the document
+            vertx.setTimer(2000, id -> {
+                DeleteByQueryOptions deleteByQueryOptions = new DeleteByQueryOptions()
+                        .setTimeout("1000")
+                        .setQuery(new JsonObject().put("ids", new JsonObject().put("values", new JsonArray().add(documentId.toString()))));
+
+                service.deleteByQuery(index, deleteByQueryOptions, deleteByQueryResult -> {
+
+                    assertThat(testContext, deleteByQueryResult.succeeded(), is(true));
+                    JsonObject json = deleteByQueryResult.result();
+                    System.out.println(json);
+                    assertThat(testContext, json, notNullValue());
+
+                    assertThat(testContext, json.getJsonObject("_indices"), notNullValue());
+                    assertThat(testContext, json.getJsonObject("_indices").getJsonObject(index), notNullValue());
+                    assertThat(testContext, json.getJsonObject("_indices").getJsonObject("_all"), notNullValue());
+                    assertThat(testContext, json.getJsonObject("_indices").getJsonObject(index).getInteger("found"), is(1));
+                    assertThat(testContext, json.getJsonObject("_indices").getJsonObject(index).getInteger("deleted"), is(1));
+                    assertThat(testContext, json.getJsonObject("_indices").getJsonObject(index).getInteger("failed"), is(0));
+
+                    async.complete();
+                });
+            });
+        });
+    }
+
+    @Test
+    public void test99Delete(TestContext testContext) throws Exception {
+
+        final Async async = testContext.async();
         service.delete(index, type, id, result -> {
 
-            assertTrue(result.succeeded());
+            assertThat(testContext, result.succeeded(), is(true));
             JsonObject json = result.result();
 
-            assertEquals(index, json.getString(DefaultElasticSearchService.CONST_INDEX));
-            assertEquals(type, json.getString(DefaultElasticSearchService.CONST_TYPE));
-            assertEquals(id, json.getString(DefaultElasticSearchService.CONST_ID));
-            assertTrue(json.getInteger(DefaultElasticSearchService.CONST_VERSION, 0) > 0);
+            assertThat(testContext, json.getString(DefaultElasticSearchService.CONST_INDEX), is(index));
+            assertThat(testContext, json.getString(DefaultElasticSearchService.CONST_TYPE), is(type));
+            assertThat(testContext, json.getString(DefaultElasticSearchService.CONST_ID), is(id));
+            assertThat(testContext, json.getInteger(DefaultElasticSearchService.CONST_VERSION, 0), greaterThan(0));
 
-            testComplete();
+            async.complete();
 
         });
-
-        await();
     }
 
     private JsonObject readConfig() {

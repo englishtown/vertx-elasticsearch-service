@@ -1,6 +1,15 @@
 package com.englishtown.vertx.elasticsearch.impl;
 
-import com.englishtown.vertx.elasticsearch.*;
+import com.englishtown.vertx.elasticsearch.DeleteByQueryOptions;
+import com.englishtown.vertx.elasticsearch.DeleteOptions;
+import com.englishtown.vertx.elasticsearch.ElasticSearchConfigurator;
+import com.englishtown.vertx.elasticsearch.GetOptions;
+import com.englishtown.vertx.elasticsearch.IndexOptions;
+import com.englishtown.vertx.elasticsearch.SearchOptions;
+import com.englishtown.vertx.elasticsearch.SearchScrollOptions;
+import com.englishtown.vertx.elasticsearch.SuggestOptions;
+import com.englishtown.vertx.elasticsearch.TransportClientFactory;
+import com.englishtown.vertx.elasticsearch.UpdateOptions;
 import com.englishtown.vertx.elasticsearch.internal.InternalElasticSearchService;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -10,6 +19,9 @@ import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.delete.DeleteRequestBuilder;
 import org.elasticsearch.action.delete.DeleteResponse;
+import org.elasticsearch.action.deletebyquery.DeleteByQueryAction;
+import org.elasticsearch.action.deletebyquery.DeleteByQueryRequestBuilder;
+import org.elasticsearch.action.deletebyquery.DeleteByQueryResponse;
 import org.elasticsearch.action.get.GetRequestBuilder;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequestBuilder;
@@ -375,6 +387,34 @@ public class DefaultElasticSearchService implements InternalElasticSearchService
             }
         });
 
+    }
+
+    @Override
+    public void deleteByQuery(List<String> indices, DeleteByQueryOptions options, Handler<AsyncResult<JsonObject>> resultHandler) {
+        final DeleteByQueryRequestBuilder deleteByQueryRequestBuilder = new DeleteByQueryRequestBuilder(client, DeleteByQueryAction.INSTANCE)
+                .setIndices(indices.toArray(new String[indices.size()]));
+
+        if (options != null) {
+            if (!options.getTypes().isEmpty()) {
+                deleteByQueryRequestBuilder.setTypes(options.getTypes().toArray(new String[options.getTypes().size()]));
+            }
+            if (options.getTimeout() != null) deleteByQueryRequestBuilder.setTimeout(options.getTimeout());
+            if (options.getRouting() != null) deleteByQueryRequestBuilder.setRouting(options.getRouting());
+            if (options.getQuery() != null) deleteByQueryRequestBuilder.setSource("{\"query\": " + options.getQuery().encode() + "}");
+        }
+
+        deleteByQueryRequestBuilder.execute(new ActionListener<DeleteByQueryResponse>() {
+            @Override
+            public void onResponse(DeleteByQueryResponse deleteByQueryResponse) {
+                JsonObject json = readResponse(deleteByQueryResponse);
+                resultHandler.handle(Future.succeededFuture(json));
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+                handleFailure(resultHandler, t);
+            }
+        });
     }
 
     @Override
