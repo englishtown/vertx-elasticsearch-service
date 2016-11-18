@@ -13,11 +13,11 @@
 
     <properties>
         <vertx.version>3.3.3</vertx.version>
-        <es.version>2.2.0</es.version>
-        <lucene.version>5.4.1</lucene.version>
+        <es.version>2.4.1</es.version>
+        <lucene.version>5.5.2</lucene.version>
         <vertx.hk2.version>2.4.0</vertx.hk2.version>
-        <vertx.guice.version>2.3.0</vertx.guice.version>
-        <when.version>4.1.1</when.version>
+        <vertx.guice.version>2.3.1</vertx.guice.version>
+        <when.version>4.2.0</when.version>
 
         <!--Vert.x codegen does not play nice with maven-compiler-plugin 3.2-->
         <maven.compiler.plugin.version>3.1</maven.compiler.plugin.version>
